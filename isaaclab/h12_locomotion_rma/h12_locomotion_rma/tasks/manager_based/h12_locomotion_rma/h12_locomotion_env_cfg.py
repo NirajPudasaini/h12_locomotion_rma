@@ -3,12 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""
-H12 Locomotion RMA Environment Configuration.
-This environment is used for training with Rapid Motor Adaptation (RMA).
-The RMA module will be added to adapt to environment variations at test time.
-"""
-
 import math
 
 import isaaclab.sim as sim_utils
@@ -66,8 +60,8 @@ COBBLESTONE_ROAD_CFG = terrain_gen.TerrainGeneratorCfg(
 ##
 
 @configclass
-class H12LocomotionRMASceneCfg(InteractiveSceneCfg):
-    """Configuration for H12 locomotion scene with RMA."""
+class H12LocomotionSceneCfg(InteractiveSceneCfg):
+    """Configuration for H12 locomotion scene."""
 
     # ground terrain
     terrain = TerrainImporterCfg(
@@ -110,6 +104,15 @@ class H12LocomotionRMASceneCfg(InteractiveSceneCfg):
             texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
         ),
     )
+
+    # # robot
+    # robot: ArticulationCfg = H12_CFG_HANDLESS.replace(prim_path="{ENV_REGEX_NS}/Robot")
+
+    # # lights
+    # dome_light = AssetBaseCfg(
+    #     prim_path="/World/DomeLight",
+    #     spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
+    # )
 
 
 ##
@@ -262,30 +265,17 @@ class RewardsCfg:
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ankle_roll.*"),
         },
     )
-
     feet_clearance = RewTerm(
         func=mdp.foot_clearance_reward,
         weight=1.0,
         params={
             "std": 0.05,
             "tanh_mult": 2.0,
-            "target_height": 0.17,
+            "target_height": 0.18,
             "asset_cfg": SceneEntityCfg("robot", body_names=".*ankle_roll.*"),
         },
     )
 
-    joint_deviation_waists = RewTerm(
-        func=mdp.joint_deviation_l1,
-        weight=-1,
-        params={
-            "asset_cfg": SceneEntityCfg(
-                "robot",
-                joint_names=[
-                    "waist.*",
-                ],
-            )
-        },
-    )
     # -- other
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
@@ -385,14 +375,9 @@ class CurriculumCfg:
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
 
 @configclass
-class H12LocomotionRMAEnvCfg(ManagerBasedRLEnvCfg):
-    """Environment configuration for H12 Locomotion with RMA.
-    
-    This configuration is identical to the base v0 environment but is used
-    for training policies that will be adapted by an RMA adaptation module.
-    """
+class H12LocomotionEnvCfg(ManagerBasedRLEnvCfg):
     # Scene settings
-    scene: H12LocomotionRMASceneCfg = H12LocomotionRMASceneCfg(num_envs=4096, env_spacing=4.0)
+    scene: H12LocomotionSceneCfg = H12LocomotionSceneCfg(num_envs=4096, env_spacing=4.0)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
