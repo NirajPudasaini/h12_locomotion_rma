@@ -66,8 +66,10 @@ H12_CFG_HANDLESS = ArticulationCfg(
        # asset_path= "/home/niraj/isaac_projects/H12_Bullet_Time/h12_bullet_time/source/h12_bullet_time/h12_bullet_time/assets/robots/gentact_descriptions/robots/h1-2/h1_2_handless.urdf",
        
         #laptop path
-        asset_path= "/home/niraj/isaac_projects/gentact_descriptions/robots/h1-2/h1_2_handless.urdf",
-
+      #  asset_path= "/home/niraj/isaac_projects/gentact_descriptions/robots/h1-2/h1_2_handless.urdf",
+       
+       #for laptop!
+        asset_path = "/home/niraj/h12_locomotion_rma/isaaclab/h12_locomotion_rma/h12_locomotion_rma/assets/robots/h1-2/h1_2_handless.urdf",
         activate_contact_sensors=True,
 
         rigid_props=sim_utils.RigidBodyPropertiesCfg(

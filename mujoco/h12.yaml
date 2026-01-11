@@ -1,6 +1,6 @@
 # 
-policy_path: "/home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/logs/rsl_rl/h12_locomotion_rma/2026-01-09_15-46-33/exported/policy.pt"
-xml_path: "/home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/mujoco/h1_2/h1_2_27dof_handless.xml"
+policy_path: "{H12_ROOT}/logs/rsl_rl/h12_locomotion_rma/2026-01-09_15-46-33/exported/policy.pt"
+xml_path: "{H12_ROOT}/mujoco/h1_2/h1_2_27dof_handless.xml"
 
 # Total simulation time
 simulation_duration: 60.0

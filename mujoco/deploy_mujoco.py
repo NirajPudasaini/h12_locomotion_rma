@@ -31,15 +31,21 @@ def pd_control(target_q, q, kp, target_dq, dq, kd):
 if __name__ == "__main__":
     # get config file name from command line
     import argparse
+    import os
 
     parser = argparse.ArgumentParser()
     parser.add_argument("config_file", type=str, help="config file name in the config folder")
     args = parser.parse_args()
     config_file = args.config_file
-    with open(f"{LEGGED_GYM_ROOT_DIR}/deploy/deploy_mujoco/configs/{config_file}", "r") as f:
+    
+    # Get H12 root directory (one level up from mujoco folder)
+    h12_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    config_path = os.path.join(os.path.dirname(__file__), config_file)
+    with open(config_path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-        policy_path = config["policy_path"].replace("{LEGGED_GYM_ROOT_DIR}", LEGGED_GYM_ROOT_DIR)
-        xml_path = config["xml_path"].replace("{LEGGED_GYM_ROOT_DIR}", LEGGED_GYM_ROOT_DIR)
+        policy_path = config["policy_path"].replace("{H12_ROOT}", h12_root)
+        xml_path = config["xml_path"].replace("{H12_ROOT}", h12_root)
 
         simulation_duration = config["simulation_duration"]
         simulation_dt = config["simulation_dt"]
@@ -67,6 +73,13 @@ if __name__ == "__main__":
     obs = np.zeros(num_obs, dtype=np.float32)
 
     counter = 0
+    
+    # Observation history buffer: (history_length, obs_dim)
+    history_length = 5
+    # obs_dim = 3(omega) + 3(gravity) + 3(cmd) + 12(qpos) + 12(qvel) + 12(last_action) = 45
+    obs_single = np.zeros(3 + 3 + 3 + num_actions + num_actions + num_actions)
+    obs_history = np.zeros((history_length, obs_single.shape[0]))
+    last_action = np.zeros(num_actions, dtype=np.float32)
 
     # Load robot model
     m = mujoco.MjModel.from_xml_path(xml_path)
@@ -102,22 +115,25 @@ if __name__ == "__main__":
                 gravity_orientation = get_gravity_orientation(quat)
                 omega = omega * ang_vel_scale
 
-                period = 0.8
-                count = counter * simulation_dt
-                phase = count % period / period
-                sin_phase = np.sin(2 * np.pi * phase)
-                cos_phase = np.cos(2 * np.pi * phase)
-
-                obs[:3] = omega
-                obs[3:6] = gravity_orientation
-                obs[6:9] = cmd * cmd_scale
-                obs[9 : 9 + num_actions] = qj
-                obs[9 + num_actions : 9 + 2 * num_actions] = dqj
-                obs[9 + 2 * num_actions : 9 + 3 * num_actions] = action
-                obs[9 + 3 * num_actions : 9 + 3 * num_actions + 2] = np.array([sin_phase, cos_phase])
-                obs_tensor = torch.from_numpy(obs).unsqueeze(0)
+                # Construct observation vector matching environment config:
+                # [base_ang_vel(3), projected_gravity(3), velocity_commands(3), 
+                #  joint_pos_rel(12), joint_vel_rel(12), last_action(12)]
+                obs_single[:3] = omega
+                obs_single[3:6] = gravity_orientation
+                obs_single[6:9] = cmd * cmd_scale
+                obs_single[9:9 + num_actions] = qj
+                obs_single[9 + num_actions:9 + 2 * num_actions] = dqj
+                obs_single[9 + 2 * num_actions:9 + 3 * num_actions] = last_action
+                
+                # Shift history and add new observation
+                obs_history = np.roll(obs_history, shift=1, axis=0)
+                obs_history[0] = obs_single
+                
+                # Flatten history for policy input: (history_length * obs_dim,)
+                obs_tensor = torch.from_numpy(obs_history.flatten()).unsqueeze(0).float()
                 # policy inference
                 action = policy(obs_tensor).detach().numpy().squeeze()
+                last_action = action.copy()
                 # transform action to target_dof_pos
                 target_dof_pos = action * action_scale + default_angles
 

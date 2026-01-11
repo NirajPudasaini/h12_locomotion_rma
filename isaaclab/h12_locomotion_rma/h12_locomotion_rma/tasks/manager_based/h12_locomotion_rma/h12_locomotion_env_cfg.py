@@ -252,7 +252,7 @@ class RewardsCfg:
         params={
             "period": 0.8,
             "offset": [0.0, 0.5],
-            "threshold": 0.55,
+            "threshold": 0.6,  # 60% stance, 40% swing (natural gait)
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ankle_roll.*"),
         },
