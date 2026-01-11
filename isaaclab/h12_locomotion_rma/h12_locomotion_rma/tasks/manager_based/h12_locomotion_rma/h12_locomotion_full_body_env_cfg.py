@@ -86,16 +86,6 @@ class H12LocomotionSceneCfg(InteractiveSceneCfg):
     # robots
     robot: ArticulationCfg = H12_CFG_HANDLESS.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
-    # # sensors
-    # height_scanner = RayCasterCfg(
-    #     prim_path="{ENV_REGEX_NS}/Robot/torso_link",
-    #     offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
-    #     ray_alignment="yaw",
-    #     pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
-    #     debug_vis=False,
-    #     mesh_prim_paths=["/World/ground"],
-    # )
-
     contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
 
     # lights
@@ -106,15 +96,6 @@ class H12LocomotionSceneCfg(InteractiveSceneCfg):
             texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
         ),
     )
-
-    # # robot
-    # robot: ArticulationCfg = H12_CFG_HANDLESS.replace(prim_path="{ENV_REGEX_NS}/Robot")
-
-    # # lights
-    # dome_light = AssetBaseCfg(
-    #     prim_path="/World/DomeLight",
-    #     spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
-    # )
 
 
 ##
@@ -137,32 +118,49 @@ class CommandsCfg:
     )
 
 @configclass
-class ActionsCfg:
-    """Action specifications for the MDP."""
-
+class ActionsFullBodyCfg:
+    """Action specifications for the MDP (Full Body - 27 DOF)."""
 
     joint_effort = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=[
-            # 12 dof !
+            # 12 leg DOF
             # Left leg
             "left_hip_yaw_joint",
             "left_hip_roll_joint",
             "left_hip_pitch_joint",
-            "left_knee_joint",        #6      
-            "left_ankle_pitch_joint", #0
-            "left_ankle_roll_joint",  #1
+            "left_knee_joint",
+            "left_ankle_pitch_joint",
+            "left_ankle_roll_joint",
 
             # Right leg
-            "right_hip_yaw_joint",   #5
-            "right_hip_roll_joint",  #4
-            "right_hip_pitch_joint", #3
+            "right_hip_yaw_joint",
+            "right_hip_roll_joint",
+            "right_hip_pitch_joint",
             "right_knee_joint",
             "right_ankle_pitch_joint",
             "right_ankle_roll_joint",
+
+            # 15 upper body DOF (torso + arms) - correct joint names from URDF
+            "torso_joint",
+            "left_shoulder_pitch_joint",
+            "left_shoulder_roll_joint",
+            "left_shoulder_yaw_joint",
+            "left_elbow_joint",
+            "left_wrist_roll_joint",
+            "left_wrist_pitch_joint",
+            "left_wrist_yaw_joint",
+            "right_shoulder_pitch_joint",
+            "right_shoulder_roll_joint",
+            "right_shoulder_yaw_joint",
+            "right_elbow_joint",
+            "right_wrist_roll_joint",
+            "right_wrist_pitch_joint",
+            "right_wrist_yaw_joint",
         ],
-        use_default_offset = True,
+        use_default_offset=True,
         clip={
+            # Legs (same as before)
             "left_hip_yaw_joint": (-0.43, 0.43),
             "right_hip_yaw_joint": (-0.43, 0.43),
             "left_hip_pitch_joint": (-3.14, 2.5),
@@ -172,9 +170,18 @@ class ActionsCfg:
             ".*_knee_joint": (-0.26, 2.05),
             ".*_ankle_pitch_joint": (-0.897334, 0.523598),
             ".*_ankle_roll_joint": (-0.261799, 0.261799),
+            # Upper body (torso + arms stay near 0)
+            "torso_joint": (-2.35, 2.35),
+            ".*_shoulder_pitch_joint": (-3.14, 1.57),
+            ".*_shoulder_roll_joint": (-3.4, 0.38),
+            ".*_shoulder_yaw_joint": (-3.01, 2.66),
+            ".*_elbow_joint": (-0.95, 3.18),
+            ".*_wrist_roll_joint": (-3.01, 2.75),
+            ".*_wrist_pitch_joint": (-0.47, 0.47),
+            ".*_wrist_yaw_joint": (-1.27, 1.27),
         },
-        preserve_order = True,
-        scale= 0.25, # change this scaling to make it 
+        preserve_order=True,
+        scale=0.25,
     )
 
 
@@ -193,7 +200,6 @@ class ObservationsCfg:
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05, noise=Unoise(n_min=-1.5, n_max=1.5))
         last_action = ObsTerm(func=mdp.last_action)
-        # gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
 
         def __post_init__(self):
             self.history_length = 5
@@ -207,19 +213,13 @@ class ObservationsCfg:
     class CriticCfg(ObsGroup):
         """Observations for critic group."""
 
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel) #priv_info!
-
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)  # priv_info!
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, scale=0.2)
         projected_gravity = ObsTerm(func=mdp.projected_gravity)
         velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05)
         last_action = ObsTerm(func=mdp.last_action)
-        # gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
-        # height_scanner = ObsTerm(func=mdp.height_scan,
-        #     params={"sensor_cfg": SceneEntityCfg("height_scanner")},
-        #     clip=(-1.0, 5.0),
-        # )
 
         def __post_init__(self):
             self.history_length = 5
@@ -229,8 +229,8 @@ class ObservationsCfg:
 
 
 @configclass
-class RewardsCfg:
-    """Reward terms for the MDP."""
+class RewardsFullBodyCfg:
+    """Reward terms for the MDP (Full Body with upper body penalty)."""
 
     # -- task
     track_lin_vel_xy = RewTerm(
@@ -256,11 +256,32 @@ class RewardsCfg:
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_hip_roll_joint", ".*_hip_yaw_joint"])},
     )
 
+    # -- upper body penalty (keep torso and arms at 0 position)
+    upper_body_at_zero = RewTerm(
+        func=mdp.joint_deviation_l1,
+        weight=-2.0,
+        params={
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                joint_names=[
+                    "torso_joint",
+                    ".*_shoulder_pitch_joint",
+                    ".*_shoulder_roll_joint",
+                    ".*_shoulder_yaw_joint",
+                    ".*_elbow_joint",
+                    ".*_wrist_roll_joint",
+                    ".*_wrist_pitch_joint",
+                    ".*_wrist_yaw_joint",
+                ],
+            )
+        },
+    )
+
     # -- robot
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
     base_height = RewTerm(func=mdp.base_height_l2, weight=-10, params={"target_height": 1.03})
 
-    # -- feet
+    # -- feet (same as before)
     gait = RewTerm(
         func=mdp.feet_gait,
         weight=0.5,
@@ -373,6 +394,7 @@ class EventCfg:
         params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
     )
 
+
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
@@ -389,17 +411,20 @@ class CurriculumCfg:
     terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     lin_vel_cmd_levels = CurrTerm(mdp.lin_vel_cmd_levels)
 
+
 @configclass
-class H12LocomotionEnvCfg(ManagerBasedRLEnvCfg):
+class H12LocomotionFullBodyEnvCfg(ManagerBasedRLEnvCfg):
+    """Configuration for H12 full-body locomotion task (27 DOF control)."""
+
     # Scene settings
     scene: H12LocomotionSceneCfg = H12LocomotionSceneCfg(num_envs=4096, env_spacing=4.0)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
-    actions: ActionsCfg = ActionsCfg()
+    actions: ActionsFullBodyCfg = ActionsFullBodyCfg()
     commands: CommandsCfg = CommandsCfg()
     events: EventCfg = EventCfg()
     # MDP settings
-    rewards: RewardsCfg = RewardsCfg()
+    rewards: RewardsFullBodyCfg = RewardsFullBodyCfg()
     terminations: TerminationsCfg = TerminationsCfg()
 
     # Post initialization

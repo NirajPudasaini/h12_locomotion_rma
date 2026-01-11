@@ -3,7 +3,6 @@ import time
 import mujoco.viewer
 import mujoco
 import numpy as np
-from legged_gym import LEGGED_GYM_ROOT_DIR
 import torch
 import yaml
 
@@ -53,6 +52,12 @@ if __name__ == "__main__":
 
         kps = np.array(config["kps"], dtype=np.float32)
         kds = np.array(config["kds"], dtype=np.float32)
+        
+        kps_arms = np.array(config["kps_arms"], dtype=np.float32)
+        kds_arms = np.array(config["kds_arms"], dtype=np.float32)
+
+        legs_motor_pos_lower_limit_list = np.array(config["legs_motor_pos_lower_limit_list"], dtype=np.float32)
+        legs_motor_pos_upper_limit_list = np.array(config["legs_motor_pos_upper_limit_list"], dtype=np.float32)
 
         default_angles = np.array(config["default_angles"], dtype=np.float32)
 
@@ -71,14 +76,17 @@ if __name__ == "__main__":
     action = np.zeros(num_actions, dtype=np.float32)
     target_dof_pos = default_angles.copy()
     obs = np.zeros(num_obs, dtype=np.float32)
+    
+    # Arm control (keep at 0 position)
+    target_arm_pos = np.zeros(len(kps_arms), dtype=np.float32)
 
     counter = 0
     
-    # Observation history buffer: (history_length, obs_dim)
+    # Observation history buffer matching IsaacLab config
     history_length = 5
-    # obs_dim = 3(omega) + 3(gravity) + 3(cmd) + 12(qpos) + 12(qvel) + 12(last_action) = 45
-    obs_single = np.zeros(3 + 3 + 3 + num_actions + num_actions + num_actions)
-    obs_history = np.zeros((history_length, obs_single.shape[0]))
+    obs_dim = 3 + 3 + 3 + 27 + 27 + 12  # base_ang_vel + projected_gravity + velocity_commands + joint_pos_rel(27) + joint_vel_rel(27) + last_action(12)
+    obs_single = np.zeros(obs_dim, dtype=np.float32)
+    obs_history = np.zeros((history_length, obs_dim), dtype=np.float32)
     last_action = np.zeros(num_actions, dtype=np.float32)
 
     # Load robot model
@@ -94,49 +102,63 @@ if __name__ == "__main__":
         start = time.time()
         while viewer.is_running() and time.time() - start < simulation_duration:
             step_start = time.time()
-            tau = pd_control(target_dof_pos, d.qpos[7:], kps, np.zeros_like(kds), d.qvel[6:], kds)
-            d.ctrl[:] = tau
-            # mj_step can be replaced with code that also evaluates
-            # a policy and applies a control signal before stepping the physics.
+            
+            # PD control for legs (first 12 DOF)
+            tau_legs = pd_control(target_dof_pos, d.qpos[7:19], kps, np.zeros_like(kds), d.qvel[6:18], kds)
+            
+            # PD control for arms (DOF 13-27, indices 19:33 in qpos, 18:32 in qvel)
+            tau_arms = pd_control(target_arm_pos, d.qpos[19:], np.zeros_like(kps_arms), np.zeros_like(kds_arms), d.qvel[18:], kds_arms)
+            
+            d.ctrl[:] = 0  # Reset all controls
+            d.ctrl[:12] = tau_legs  # Apply leg control
+            d.ctrl[12:] = tau_arms  # Apply arm control to remaining actuators
+            
             mujoco.mj_step(m, d)
 
             counter += 1
             if counter % control_decimation == 0:
-                # Apply control signal here.
-
-                # create observation
-                qj = d.qpos[7:]
-                dqj = d.qvel[6:]
-                quat = d.qpos[3:7]
-                omega = d.qvel[3:6]
-
-                qj = (qj - default_angles) * dof_pos_scale
-                dqj = dqj * dof_vel_scale
-                gravity_orientation = get_gravity_orientation(quat)
-                omega = omega * ang_vel_scale
-
-                # Construct observation vector matching environment config:
-                # [base_ang_vel(3), projected_gravity(3), velocity_commands(3), 
-                #  joint_pos_rel(12), joint_vel_rel(12), last_action(12)]
-                obs_single[:3] = omega
+                # Extract state from MuJoCo
+                qj_all = d.qpos[7:]  # All 27 joint positions (or however many are in the model)
+                dqj_all = d.qvel[6:]  # All 27 joint velocities
+                qj_leg = d.qpos[7:19]  # First 12 joints for PD control
+                quat = d.qpos[3:7]  # Floating base quaternion
+                omega = d.qvel[3:6]  # Floating base angular velocity
+                
+                # Scale observations to match IsaacLab training (from h12_locomotion_env_cfg.py)
+                omega_scaled = omega * 0.2  # base_ang_vel scale=0.2
+                gravity_orientation = get_gravity_orientation(quat)  # projected_gravity (no scale)
+                
+                # For joint_pos_rel: compare all joints against default_angles, padding with zeros for extra joints
+                default_all = np.concatenate([default_angles, np.zeros(len(qj_all) - len(default_angles))])
+                qj_rel = (qj_all - default_all) * 1.0  # joint_pos_rel (all joints, no scale)
+                dqj_scaled = dqj_all * 0.05  # joint_vel_rel scale=0.05
+                cmd_scaled = cmd * cmd_scale  # velocity_commands (uses cmd_scale from config)
+                
+                # Build observation: [base_ang_vel(3), projected_gravity(3), velocity_commands(3),
+                #                     joint_pos_rel(27), joint_vel_rel(27), last_action(12)]
+                obs_single[0:3] = omega_scaled
                 obs_single[3:6] = gravity_orientation
-                obs_single[6:9] = cmd * cmd_scale
-                obs_single[9:9 + num_actions] = qj
-                obs_single[9 + num_actions:9 + 2 * num_actions] = dqj
-                obs_single[9 + 2 * num_actions:9 + 3 * num_actions] = last_action
+                obs_single[6:9] = cmd_scaled
+                obs_single[9:9+len(qj_rel)] = qj_rel  # All joint positions
+                obs_single[9+len(qj_rel):9+2*len(qj_rel)] = dqj_scaled  # All joint velocities
+                obs_single[9+2*len(qj_rel):9+2*len(qj_rel)+12] = last_action  # 12 actions
                 
                 # Shift history and add new observation
                 obs_history = np.roll(obs_history, shift=1, axis=0)
                 obs_history[0] = obs_single
                 
-                # Flatten history for policy input: (history_length * obs_dim,)
+                # Flatten history for policy input
                 obs_tensor = torch.from_numpy(obs_history.flatten()).unsqueeze(0).float()
-                # policy inference
+                
+                # Policy inference
                 action = policy(obs_tensor).detach().numpy().squeeze()
                 last_action = action.copy()
-                # transform action to target_dof_pos
+                
+                # Transform action to target positions
                 target_dof_pos = action * action_scale + default_angles
-
+                
+                # Constrain target positions within joint limits
+                target_dof_pos = np.clip(target_dof_pos, legs_motor_pos_lower_limit_list, legs_motor_pos_upper_limit_list)
             # Pick up changes to the physics state, apply perturbations, update options from GUI.
             viewer.sync()
 

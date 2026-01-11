@@ -1,6 +1,6 @@
 # 
-policy_path: "{H12_ROOT}/logs/rsl_rl/h12_locomotion_rma/2026-01-09_15-46-33/exported/policy.pt"
-xml_path: "{H12_ROOT}/mujoco/h1_2/h1_2_27dof_handless.xml"
+policy_path: "/home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/logs/rsl_rl/h12_locomotion_rma/2026-01-11_16-00-21/exported/policy.pt"
+xml_path: "/home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/mujoco/h1_2/scene.xml"
 
 # Total simulation time
 simulation_duration: 60.0
@@ -9,11 +9,28 @@ simulation_dt: 0.002
 # Controller update frequency (meets the requirement of simulation_dt * controll_decimation=0.02; 50Hz)
 control_decimation: 10
 
+
+# PD gains for arms (identical in both files)
+kps_arms: [150.0,
+            200, 200, 150, 150, 150, 50, 50.0,
+            200, 200, 150, 150, 150, 50, 50.0]
+
+kds_arms: [3.0,
+            6.0, 6.0, 4.0, 4.0, 4.0, 3.0, 3.0,
+            6.0, 6.0, 4.0, 4.0, 4.0, 3.0, 3.0]
+
+
 kps: [200, 200, 200, 300, 40, 40, 200, 200, 200, 300, 40, 40]
 kds: [2.5, 2.5, 2.5, 4, 2, 2,  2.5, 2.5, 2.5, 4, 2, 2]
 
-default_angles: [0, -0.16, 0.0, 0.36, -0.2, 0.0, 
-                 0, -0.16, 0.0, 0.36, -0.2, 0.0]
+legs_motor_pos_lower_limit_list: [-0.43, -0.43, -3.14, -0.26, -0.897334, -0.261799,
+                                  -0.43, -3.14, -3.14, -0.26, -0.897334, -0.261799]
+
+legs_motor_pos_upper_limit_list: [0.43, 3.14, 2.5, 2.05, 0.523598, 0.261799,
+                                  0.43, 0.43, 2.5, 2.05, 0.523598, 0.261799]
+
+default_angles: [0, 0.0, -0.16, 0.36, -0.15, 0.0, 
+                 0, 0.0, -0.16, 0.36, -0.15, 0.0]
 
 ang_vel_scale: 0.25
 dof_pos_scale: 1.0
@@ -23,4 +40,4 @@ cmd_scale: [2.0, 2.0, 0.25]
 num_actions: 12
 num_obs: 47
 
-cmd_init: [0.5, 0, 0]
+cmd_init: [1, 0, 0]

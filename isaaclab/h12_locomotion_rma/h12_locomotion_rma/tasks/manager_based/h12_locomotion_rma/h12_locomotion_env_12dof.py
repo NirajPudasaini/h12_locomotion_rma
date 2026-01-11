@@ -23,7 +23,7 @@ from . import mdp
 # Added from Unitree RL Lab ! ######################################
 ####################################################################
 #Robot config
-from h12_locomotion_rma.assets.robots.unitree import H12_CFG_HANDLESS  # isort:skip
+from h12_locomotion_rma.assets.robots.unitree import H12_CFG_12DOF  # isort:skip
 
 #Terrain config
 import isaaclab.terrains as terrain_gen
@@ -84,7 +84,7 @@ class H12LocomotionSceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
     # robots
-    robot: ArticulationCfg = H12_CFG_HANDLESS.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot: ArticulationCfg = H12_CFG_12DOF.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     # # sensors
     # height_scanner = RayCasterCfg(
@@ -106,16 +106,6 @@ class H12LocomotionSceneCfg(InteractiveSceneCfg):
             texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
         ),
     )
-
-    # # robot
-    # robot: ArticulationCfg = H12_CFG_HANDLESS.replace(prim_path="{ENV_REGEX_NS}/Robot")
-
-    # # lights
-    # dome_light = AssetBaseCfg(
-    #     prim_path="/World/DomeLight",
-    #     spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
-    # )
-
 
 ##
 # MDP settings
@@ -140,28 +130,26 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-
     joint_effort = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=[
-            # 12 dof !
+            # 12 dof legs only
             # Left leg
             "left_hip_yaw_joint",
             "left_hip_roll_joint",
             "left_hip_pitch_joint",
-            "left_knee_joint",        #6      
-            "left_ankle_pitch_joint", #0
-            "left_ankle_roll_joint",  #1
-
+            "left_knee_joint",
+            "left_ankle_pitch_joint",
+            "left_ankle_roll_joint",
             # Right leg
-            "right_hip_yaw_joint",   #5
-            "right_hip_roll_joint",  #4
-            "right_hip_pitch_joint", #3
+            "right_hip_yaw_joint",
+            "right_hip_roll_joint",
+            "right_hip_pitch_joint",
             "right_knee_joint",
             "right_ankle_pitch_joint",
             "right_ankle_roll_joint",
         ],
-        use_default_offset = True,
+        use_default_offset=True,
         clip={
             "left_hip_yaw_joint": (-0.43, 0.43),
             "right_hip_yaw_joint": (-0.43, 0.43),
@@ -173,8 +161,8 @@ class ActionsCfg:
             ".*_ankle_pitch_joint": (-0.897334, 0.523598),
             ".*_ankle_roll_joint": (-0.261799, 0.261799),
         },
-        preserve_order = True,
-        scale= 0.25, # change this scaling to make it 
+        preserve_order=True,
+        scale=0.25,
     )
 
 
@@ -323,7 +311,7 @@ class EventCfg:
         func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="torso_link"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="pelvis"),
             "mass_distribution_params": (-1.0, 3.0),
             "operation": "add",
         },
@@ -334,7 +322,7 @@ class EventCfg:
         func=mdp.apply_external_force_torque,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="torso_link"),
+            "asset_cfg": SceneEntityCfg("robot", body_names="pelvis"),
             "force_range": (0.0, 0.0),
             "torque_range": (-0.0, 0.0),
         },
