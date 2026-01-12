@@ -208,6 +208,7 @@
   </worldbody>
 
   <actuator>
+    <!-- Legs (12 DOF) -->
     <motor name="left_hip_yaw_joint" joint="left_hip_yaw_joint"/>
     <motor name="left_hip_pitch_joint" joint="left_hip_pitch_joint"/>
     <motor name="left_hip_roll_joint" joint="left_hip_roll_joint"/>
@@ -221,6 +222,27 @@
     <motor name="right_knee_joint" joint="right_knee_joint"/>
     <motor name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint"/>
     <motor name="right_ankle_roll_joint" joint="right_ankle_roll_joint"/>
+
+    <!-- Torso (1 DOF) -->
+    <motor name="torso_joint" joint="torso_joint"/>
+
+    <!-- Left Arm (7 DOF) -->
+    <motor name="left_shoulder_pitch_joint" joint="left_shoulder_pitch_joint"/>
+    <motor name="left_shoulder_roll_joint" joint="left_shoulder_roll_joint"/>
+    <motor name="left_shoulder_yaw_joint" joint="left_shoulder_yaw_joint"/>
+    <motor name="left_elbow_pitch_joint" joint="left_elbow_pitch_joint"/>
+    <motor name="left_elbow_roll_joint" joint="left_elbow_roll_joint"/>
+    <motor name="left_wrist_pitch_joint" joint="left_wrist_pitch_joint"/>
+    <motor name="left_wrist_yaw_joint" joint="left_wrist_yaw_joint"/>
+
+    <!-- Right Arm (7 DOF) -->
+    <motor name="right_shoulder_pitch_joint" joint="right_shoulder_pitch_joint"/>
+    <motor name="right_shoulder_roll_joint" joint="right_shoulder_roll_joint"/>
+    <motor name="right_shoulder_yaw_joint" joint="right_shoulder_yaw_joint"/>
+    <motor name="right_elbow_pitch_joint" joint="right_elbow_pitch_joint"/>
+    <motor name="right_elbow_roll_joint" joint="right_elbow_roll_joint"/>
+    <motor name="right_wrist_pitch_joint" joint="right_wrist_pitch_joint"/>
+    <motor name="right_wrist_yaw_joint" joint="right_wrist_yaw_joint"/>
   </actuator>
 
   <sensor>

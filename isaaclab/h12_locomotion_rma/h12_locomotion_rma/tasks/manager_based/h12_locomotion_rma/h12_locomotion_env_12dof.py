@@ -23,7 +23,7 @@ from . import mdp
 # Added from Unitree RL Lab ! ######################################
 ####################################################################
 #Robot config
-from h12_locomotion_rma.assets.robots.unitree import H12_CFG_12DOF  # isort:skip
+from h12_locomotion_rma.assets.robots.unitree import H12_CFG_12DOF, H12_12_DOF_ACTION_SCALE  # isort:skip
 
 #Terrain config
 import isaaclab.terrains as terrain_gen
@@ -129,6 +129,7 @@ class CommandsCfg:
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
+    # joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], use_default_offset=True)
 
     joint_effort = mdp.JointPositionActionCfg(
         asset_name="robot",
@@ -136,15 +137,16 @@ class ActionsCfg:
             # 12 dof legs only
             # Left leg
             "left_hip_yaw_joint",
-            "left_hip_roll_joint",
             "left_hip_pitch_joint",
+            "left_hip_roll_joint",
             "left_knee_joint",
             "left_ankle_pitch_joint",
             "left_ankle_roll_joint",
+
             # Right leg
             "right_hip_yaw_joint",
-            "right_hip_roll_joint",
             "right_hip_pitch_joint",
+            "right_hip_roll_joint",
             "right_knee_joint",
             "right_ankle_pitch_joint",
             "right_ankle_roll_joint",
@@ -203,6 +205,7 @@ class ObservationsCfg:
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel, scale=0.05)
         last_action = ObsTerm(func=mdp.last_action)
+      
         # gait_phase = ObsTerm(func=mdp.gait_phase, params={"period": 0.8})
         # height_scanner = ObsTerm(func=mdp.height_scan,
         #     params={"sensor_cfg": SceneEntityCfg("height_scanner")},
@@ -246,7 +249,7 @@ class RewardsCfg:
 
     # -- robot
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
-    base_height = RewTerm(func=mdp.base_height_l2, weight=-10, params={"target_height": 1.03})
+    base_height = RewTerm(func=mdp.base_height_l2, weight=-10, params={"target_height": 1.05})
 
     # -- feet
     gait = RewTerm(
@@ -394,10 +397,12 @@ class H12LocomotionEnvCfg(ManagerBasedRLEnvCfg):
     def __post_init__(self) -> None:
         """Post initialization."""
         # general settings
-        self.decimation = 2
+        self.actions.joint_effort.scale = H12_12_DOF_ACTION_SCALE
+
+        self.decimation = 4
         self.episode_length_s = 5
         # viewer settings
         self.viewer.eye = (8.0, 0.0, 5.0)
         # simulation settings
-        self.sim.dt = 1 / 120
+        self.sim.dt = 0.005
         self.sim.render_interval = self.decimation

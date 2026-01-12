@@ -11,8 +11,8 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 @configclass
 class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 16
-    max_iterations = 5000
-    save_interval = 500
+    max_iterations = 2000
+    save_interval = 200
     experiment_name = "h12_locomotion_rma"
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,

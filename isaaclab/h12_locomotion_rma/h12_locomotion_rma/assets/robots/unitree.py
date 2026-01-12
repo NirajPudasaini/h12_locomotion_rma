@@ -48,11 +48,11 @@ DAMPING_N7520_22p5 = 2.0 * DAMPING_RATIO * UnitreeActuatorCfg_N7520_22p5 * NATUR
 DAMPING_N5020_16 = 2.0 * DAMPING_RATIO * UnitreeActuatorCfg_N5020_16 * NATURAL_FREQ
 DAMPING_N7520_14p3 = 2.0 * DAMPING_RATIO * UnitreeActuatorCfg_N7520_14p3 * NATURAL_FREQ
 
-# print(f"STIFFNESS_M107_24: {STIFFNESS_M107_24}, DAMPING_M107_24: {DAMPING_M107_24}")
-# print(f"STIFFNESS_M107_15: {STIFFNESS_M107_15}, DAMPING_M107_15: {DAMPING_M107_15}")
-# print(f"STIFFNESS_N7520_22p5: {STIFFNESS_N7520_22p5}, DAMPING_N7520_22p5: {DAMPING_N7520_22p5}")
-# print(f"STIFFNESS_N5020_16: {STIFFNESS_N5020_16}, DAMPING_N5020_16: {DAMPING_N5020_16}")
-# print(f"STIFFNESS_N7520_14p3: {STIFFNESS_N7520_14p3}, DAMPING_N7520_14p3: {DAMPING_N7520_14p3}")
+print(f"STIFFNESS_M107_24: {STIFFNESS_M107_24}, DAMPING_M107_24: {DAMPING_M107_24}")
+print(f"STIFFNESS_M107_15: {STIFFNESS_M107_15}, DAMPING_M107_15: {DAMPING_M107_15}")
+print(f"STIFFNESS_N7520_22p5: {STIFFNESS_N7520_22p5}, DAMPING_N7520_22p5: {DAMPING_N7520_22p5}")
+print(f"STIFFNESS_N5020_16: {STIFFNESS_N5020_16}, DAMPING_N5020_16: {DAMPING_N5020_16}")
+print(f"STIFFNESS_N7520_14p3: {STIFFNESS_N7520_14p3}, DAMPING_N7520_14p3: {DAMPING_N7520_14p3}")
 
 # exit()
 
@@ -63,10 +63,8 @@ H12_CFG_HANDLESS = ArticulationCfg(
         fix_base = False,
         replace_cylinders_with_capsules=True,
 
-        asset_path= "/home/niraj/isaac_projects/H12_Bullet_Time/h12_bullet_time/source/h12_bullet_time/h12_bullet_time/assets/robots/gentact_descriptions/robots/h1-2/h1_2_handless.urdf",
-       
         #laptop path
-      #  asset_path= "/home/niraj/isaac_projects/gentact_descriptions/robots/h1-2/h1_2_handless.urdf",
+        asset_path= "/home/niraj/h12_locomotion_rma/isaaclab/h12_locomotion_rma/h12_locomotion_rma/assets/robots/h1-2/h1_2_handless.urdf",
        
        #for laptop!
        # asset_path = "/home/niraj/h12_locomotion_rma/isaaclab/h12_locomotion_rma/h12_locomotion_rma/assets/robots/h1-2/h1_2_handless.urdf",
@@ -87,6 +85,7 @@ H12_CFG_HANDLESS = ArticulationCfg(
             solver_position_iteration_count=8,
             solver_velocity_iteration_count=4
         ),
+
         joint_drive=sim_utils.UrdfConverterCfg.JointDriveCfg(
             gains=sim_utils.UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=0, damping=0)
         ),
@@ -96,15 +95,15 @@ H12_CFG_HANDLESS = ArticulationCfg(
         joint_pos={
             # legs joints
             "left_hip_yaw_joint": 0.0,
-            "left_hip_roll_joint": 0.0,
             "left_hip_pitch_joint": -0.16, #same as gym
+            "left_hip_roll_joint": 0.0,
             "left_knee_joint": 0.36,    #same as gym
             "left_ankle_pitch_joint": -0.15, #gym is -0.2,reduced a bit to avoid foot collision with ground
             "left_ankle_roll_joint": 0.0,
             
             "right_hip_yaw_joint": 0.0,
-            "right_hip_roll_joint": 0.0,
             "right_hip_pitch_joint": -0.16,
+            "right_hip_roll_joint": 0.0,
             "right_knee_joint": 0.36,
             "right_ankle_pitch_joint": -0.15,
             "right_ankle_roll_joint": 0.0,
@@ -132,80 +131,120 @@ H12_CFG_HANDLESS = ArticulationCfg(
     ),
     soft_joint_pos_limit_factor=0.9,
 
-    actuators={
-        # Motor: M107-24, Torque: 300 Nm
-        # Legs: hip pitch/roll, knee
-        "hip_pitch_roll_knee": ImplicitActuatorCfg(
-            joint_names_expr=[
-                ".*_hip_pitch_joint", 
-                ".*_hip_roll_joint",
-                ".*_knee_joint"
-            ],
-            effort_limit=300,
-            velocity_limit=100,
-            stiffness={
-                ".*_hip_pitch_joint": STIFFNESS_M107_24,
-                ".*_hip_roll_joint": STIFFNESS_M107_24,
-                ".*_knee_joint": STIFFNESS_M107_24,
-            },
-            damping={
-                ".*_hip_pitch_joint": DAMPING_M107_24,
-                ".*_hip_roll_joint": DAMPING_M107_24,
-                ".*_knee_joint": DAMPING_M107_24,
-            },
-            armature=UnitreeActuatorCfg_M107_24,
-        ),
-        # Motor: M107-15, Torque: 200 Nm
-        # Legs: hip yaw
-        "hip_yaw": ImplicitActuatorCfg(
-            joint_names_expr=[".*_hip_yaw_joint"],
-            effort_limit=200,
-            velocity_limit=100,
-            stiffness={"^.*_hip_yaw_joint$": STIFFNESS_M107_15},
-            damping={"^.*_hip_yaw_joint$": DAMPING_M107_15},
-            armature=UnitreeActuatorCfg_M107_15,
-        ),
-        # Motor: N7520-14.3, Torque: 75 Nm
-        # Legs: ankle pitch/roll
-        "ankles": ImplicitActuatorCfg(
-            joint_names_expr=[
-                ".*_ankle_pitch_joint",
-                ".*_ankle_roll_joint",
-            ],
-            effort_limit=75,
-            velocity_limit=100,
-            stiffness={
-                ".*_ankle_pitch_joint": STIFFNESS_N7520_14p3,
-                ".*_ankle_roll_joint": STIFFNESS_N7520_14p3,
-            },
-            damping={
-                ".*_ankle_pitch_joint": DAMPING_N7520_14p3,
-                ".*_ankle_roll_joint": DAMPING_N7520_14p3,
-            },
-            armature=UnitreeActuatorCfg_N7520_14p3,
-        ),
+actuators={
+    # Motor: M107-24, Torque: 300 Nm
+    # From your original "legs" group
+    "hip_pitch_roll_knee": ImplicitActuatorCfg(
+        joint_names_expr=[
+            ".*_hip_pitch_joint", 
+            ".*_hip_roll_joint",
+            ".*_knee_joint"
+        ],
+        effort_limit_sim=300,
+        velocity_limit_sim=100,
+        stiffness={
+            ".*_hip_pitch_joint": STIFFNESS_M107_24,
+            ".*_hip_roll_joint": STIFFNESS_M107_24,
+            ".*_knee_joint": STIFFNESS_M107_24,
+        },
+        damping={
+            ".*_hip_pitch_joint": DAMPING_M107_24,
+            ".*_hip_roll_joint": DAMPING_M107_24,
+            ".*_knee_joint": DAMPING_M107_24,
+        },
+        armature=UnitreeActuatorCfg_M107_24,
+    ),
+    # Motor: M107-15, Torque: 200 Nm
+    # From your original "legs" group
+    "hip_yaw": ImplicitActuatorCfg(
+        joint_names_expr=[".*_hip_yaw_joint"],
+        effort_limit_sim=200,
+        velocity_limit_sim=100,
+        stiffness={"^.*_hip_yaw_joint$": STIFFNESS_M107_15},
+        damping={"^.*_hip_yaw_joint$": DAMPING_M107_15},
+        armature=UnitreeActuatorCfg_M107_15,
+    ),
+    # Motor: N7520-22.5, Torque: 120 Nm
+    # From your original "arms" group
+    "shoulder_pitch_roll_and_elbow": ImplicitActuatorCfg(
+        joint_names_expr=[
+            ".*_shoulder_pitch_joint",
+            ".*_shoulder_roll_joint",
+            ".*_elbow_joint"
+        ],
+        effort_limit_sim= 120,
+        velocity_limit_sim= 100,
+        stiffness={
+            ".*_shoulder_.*_joint":STIFFNESS_N7520_22p5,
+            ".*_elbow_joint": STIFFNESS_N7520_22p5,
+        },
+        damping={
+            ".*_shoulder_.*_joint": DAMPING_N7520_22p5,
+            ".*_elbow_joint": DAMPING_N7520_22p5,
+        },
+        armature=UnitreeActuatorCfg_N7520_22p5,
+    ),
+    # Motor: N5020-16, Torque: 25 Nm
+    # From your original "arms" group
+    "wrists": ImplicitActuatorCfg(
+        joint_names_expr=[
+            ".*_wrist_.*_joint"
+        ],
+        effort_limit_sim=25.0,
+        velocity_limit_sim=100,
+        stiffness={
+            ".*_wrist_.*_joint": STIFFNESS_N5020_16,
+        },
+        damping={
+            ".*_wrist_.*_joint": DAMPING_N5020_16,
+        },
+        armature=UnitreeActuatorCfg_N5020_16,
+    ),
+    # Motor: N7520-14.3, Torque: 75 Nm
+    # Combined from your "feet" and "arms" groups
+    "ankles_and_shoulder_yaw": ImplicitActuatorCfg(
+        joint_names_expr=[
+            ".*_ankle_pitch_joint",
+            ".*_ankle_roll_joint",
+            ".*_shoulder_yaw_joint"
+        ],
+        effort_limit_sim=75,
+        velocity_limit_sim=100,
+        stiffness={
+            ".*_ankle_pitch_joint": STIFFNESS_N7520_14p3,
+            ".*_ankle_roll_joint": STIFFNESS_N7520_14p3,
+            ".*_shoulder_yaw_joint": STIFFNESS_N7520_14p3,
+        },
+        damping={
+            ".*_ankle_pitch_joint": DAMPING_N7520_14p3,       # From original "feet" config
+            ".*_ankle_roll_joint": DAMPING_N7520_14p3,       # From original "feet" config
+            ".*_shoulder_yaw_joint": DAMPING_N7520_14p3,   # From original "arms" config
+        },
+        armature=UnitreeActuatorCfg_N7520_14p3,
+    ),
     },
 )
 
-H12_ACTION_SCALE = {}
 
-for actuator in H12_CFG_HANDLESS.actuators.values():
-    # Get effort and stiffness parameters
-    effort = actuator.effort_limit
-    stiffness = actuator.stiffness
-    names = actuator.joint_names_expr
+# H12_ACTION_SCALE = {}
 
-    # Ensure effort and stiffness are dicts for consistent access
-    if not isinstance(effort, dict):
-        effort = {n: effort for n in names}
-    if not isinstance(stiffness, dict):
-        stiffness = {n: stiffness for n in names}
+# for actuator in H12_CFG_HANDLESS.actuators.values():
+#     # Get effort and stiffness parameters
+#     effort = actuator.effort_limit
+#     stiffness = actuator.stiffness
+#     names = actuator.joint_names_expr
 
-    # Compute scaling per joint
-    for n in names:
-        if n in effort and n in stiffness and stiffness[n]:
-            # scale = 0.25 * torque_limit / stiffness  (radians per normalized action unit)
-            H12_ACTION_SCALE[n] = 0.25 * effort[n] / stiffness[n]
+#     # Ensure effort and stiffness are dicts for consistent access
+#     if not isinstance(effort, dict):
+#         effort = {n: effort for n in names}
+#     if not isinstance(stiffness, dict):
+#         stiffness = {n: stiffness for n in names}
+
+#     # Compute scaling per joint
+#     for n in names:
+#         if n in effort and n in stiffness and stiffness[n]:
+#             # scale = 0.25 * torque_limit / stiffness  (radians per normalized action unit)
+#             H12_ACTION_SCALE[n] = 0.25 * effort[n] / stiffness[n]
 
 H12_CFG_12DOF = ArticulationCfg(
     spawn=sim_utils.UrdfFileCfg(
@@ -214,7 +253,7 @@ H12_CFG_12DOF = ArticulationCfg(
         fix_base = False,
         replace_cylinders_with_capsules=True,
 
-        asset_path= "/home/niraj/isaac_projects/unitree_rl_gym/resources/robots/h1_2/h1_2_12dof.urdf",
+        asset_path= "/home/niraj/unitree_rl_gym/resources/robots/h1_2/h1_2_12dof.urdf",
        
         #laptop path
       #  asset_path= "/home/niraj/isaac_projects/gentact_descriptions/robots/h1-2/h1_2_handless.urdf",
@@ -247,37 +286,18 @@ H12_CFG_12DOF = ArticulationCfg(
         joint_pos={
             # legs joints
             "left_hip_yaw_joint": 0.0,
-            "left_hip_roll_joint": 0.0,
             "left_hip_pitch_joint": -0.16, #same as gym
+            "left_hip_roll_joint": 0.0,
             "left_knee_joint": 0.36,    #same as gym
             "left_ankle_pitch_joint": -0.15, #gym is -0.2,reduced a bit to avoid foot collision with ground
             "left_ankle_roll_joint": 0.0,
             
             "right_hip_yaw_joint": 0.0,
-            "right_hip_roll_joint": 0.0,
             "right_hip_pitch_joint": -0.16,
+            "right_hip_roll_joint": 0.0,
             "right_knee_joint": 0.36,
             "right_ankle_pitch_joint": -0.15,
             "right_ankle_roll_joint": 0.0,
-            
-            # "torso_joint": 0.0,
-
-            # # arms joints
-            # "left_shoulder_pitch_joint": 0.0, # ~ 23 degrees, same as gym
-            # "left_shoulder_roll_joint": 0.0,
-            # "left_shoulder_yaw_joint": 0.0,
-            # "left_elbow_joint": 0.0,           # ~ 14.1 degrees, same as gym
-            # "left_wrist_roll_joint": 0.0,
-            # "left_wrist_pitch_joint": 0.0,
-            # "left_wrist_yaw_joint": 0.0,
-            
-            # "right_shoulder_pitch_joint": 0.0,  # ~ 23 degrees, same as gym
-            # "right_shoulder_roll_joint": 0.0,
-            # "right_shoulder_yaw_joint": 0.0,
-            # "right_elbow_joint": 0.0,        # ~ 14.1 degrees, same as gym
-            # "right_wrist_roll_joint": 0.0,
-            # "right_wrist_pitch_joint": 0.0,
-            # "right_wrist_yaw_joint": 0.0,
         },
         joint_vel={".*": 0.0},
     ),
@@ -292,8 +312,8 @@ H12_CFG_12DOF = ArticulationCfg(
             ".*_hip_roll_joint",
             ".*_knee_joint"
         ],
-        effort_limit=300,
-        velocity_limit=100,
+        effort_limit_sim=300,
+        velocity_limit_sim=100,
         stiffness={
             ".*_hip_pitch_joint": STIFFNESS_M107_24,
             ".*_hip_roll_joint": STIFFNESS_M107_24,
@@ -310,8 +330,8 @@ H12_CFG_12DOF = ArticulationCfg(
     # From your original "legs" group
     "hip_yaw": ImplicitActuatorCfg(
         joint_names_expr=[".*_hip_yaw_joint"],
-        effort_limit=200,
-        velocity_limit=100,
+        effort_limit_sim=200,
+        velocity_limit_sim=100,
         stiffness={"^.*_hip_yaw_joint$": STIFFNESS_M107_15},
         damping={"^.*_hip_yaw_joint$": DAMPING_M107_15},
         armature=UnitreeActuatorCfg_M107_15,
@@ -323,8 +343,8 @@ H12_CFG_12DOF = ArticulationCfg(
             ".*_ankle_pitch_joint",
             ".*_ankle_roll_joint",
         ],
-        effort_limit=75,
-        velocity_limit=100,
+        effort_limit_sim=75,
+        velocity_limit_sim=100,
         stiffness={
             ".*_ankle_pitch_joint": STIFFNESS_N7520_14p3,
             ".*_ankle_roll_joint": STIFFNESS_N7520_14p3,
@@ -337,3 +357,22 @@ H12_CFG_12DOF = ArticulationCfg(
     ),
     },
 )
+
+# Compute action scale for 12DOF configuration
+H12_12_DOF_ACTION_SCALE = {}
+
+for actuator in H12_CFG_12DOF.actuators.values():
+    # Get effort and stiffness parameters
+    effort = actuator.effort_limit_sim  # scalar torque limit
+    stiffness = actuator.stiffness  # dict of stiffness values
+    names = actuator.joint_names_expr  # list of regex patterns
+
+    # Compute scaling per joint (regex pattern)
+    for n in names:
+        if n in stiffness and stiffness[n]:
+            # scale = 0.25 * torque_limit / stiffness  (radians per normalized action unit)
+            H12_12_DOF_ACTION_SCALE[n] = 0.25 * effort / stiffness[n]
+
+print("H12_12_DOF_ACTION_SCALE computed:")
+for joint_pattern, scale in H12_12_DOF_ACTION_SCALE.items():
+    print(f"  {joint_pattern}: {scale:.6f}")

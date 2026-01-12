@@ -164,6 +164,26 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
 
+    # Print action and observation names
+    print("\n" + "="*80)
+    print("ACTION NAMES AND ORDER:")
+    print("="*80)
+    if isinstance(env_cfg, ManagerBasedRLEnvCfg):
+        base_env = env.unwrapped
+        for idx, action_term_name in enumerate(base_env.action_manager._term_names):
+            print(f"  {idx}: {action_term_name}")
+    print(f"Total actions: {env.action_space.shape}")
+    
+    print("\n" + "="*80)
+    print("OBSERVATION NAMES AND ORDER (Policy Group):")
+    print("="*80)
+    if isinstance(env_cfg, ManagerBasedRLEnvCfg):
+        base_env = env.unwrapped
+        for idx, obs_term_name in enumerate(base_env.observation_manager._group_obs_term_names["policy"]):
+            print(f"  {idx}: {obs_term_name}")
+    print(f"Total observations: {env.observation_space['policy'].shape}")
+    print("="*80 + "\n")
+
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):
         env = multi_agent_to_single_agent(env)

@@ -83,6 +83,7 @@ class H12LocomotionSceneCfg(InteractiveSceneCfg):
         ),
         debug_vis=False,
     )
+
     # robots
     robot: ArticulationCfg = H12_CFG_HANDLESS.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
@@ -143,6 +144,7 @@ class ActionsFullBodyCfg:
 
             # 15 upper body DOF (torso + arms) - correct joint names from URDF
             "torso_joint",
+
             "left_shoulder_pitch_joint",
             "left_shoulder_roll_joint",
             "left_shoulder_yaw_joint",
@@ -257,21 +259,28 @@ class RewardsFullBodyCfg:
     )
 
     # -- upper body penalty (keep torso and arms at 0 position)
-    upper_body_at_zero = RewTerm(
+    joint_deviation_arms = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-2.0,
+        weight=-0.1,
+        params={
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                joint_names=[
+                    ".*_shoulder_.*_joint",
+                    ".*_elbow_joint",
+                    ".*_wrist_.*",
+                ],
+            )
+        },
+    )
+    joint_deviation_waists = RewTerm(
+        func=mdp.joint_deviation_l1,
+        weight=-1,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
                 joint_names=[
                     "torso_joint",
-                    ".*_shoulder_pitch_joint",
-                    ".*_shoulder_roll_joint",
-                    ".*_shoulder_yaw_joint",
-                    ".*_elbow_joint",
-                    ".*_wrist_roll_joint",
-                    ".*_wrist_pitch_joint",
-                    ".*_wrist_yaw_joint",
                 ],
             )
         },
@@ -279,7 +288,7 @@ class RewardsFullBodyCfg:
 
     # -- robot
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-5.0)
-    base_height = RewTerm(func=mdp.base_height_l2, weight=-10, params={"target_height": 1.03})
+    base_height = RewTerm(func=mdp.base_height_l2, weight=-10, params={"target_height": 1.05})
 
     # -- feet (same as before)
     gait = RewTerm(
@@ -301,13 +310,14 @@ class RewardsFullBodyCfg:
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*ankle_roll.*"),
         },
     )
+
     feet_clearance = RewTerm(
         func=mdp.foot_clearance_reward,
         weight=1.0,
         params={
             "std": 0.05,
-            "tanh_mult": 2.0,
-            "target_height": 0.18,
+            "tanh_mult": 5.0,
+            "target_height": 0.165,
             "asset_cfg": SceneEntityCfg("robot", body_names=".*ankle_roll.*"),
         },
     )
@@ -391,7 +401,7 @@ class EventCfg:
         func=mdp.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(5.0, 5.0),
-        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
+        params={"velocity_range": {"x": (-0.3, 0.3), "y": (-0.1, 0.1)}},
     )
 
 
@@ -400,7 +410,7 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.45})
+    base_height = DoneTerm(func=mdp.root_height_below_minimum, params={"minimum_height": 0.5})
     bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": 0.8})
 
 
@@ -427,14 +437,24 @@ class H12LocomotionFullBodyEnvCfg(ManagerBasedRLEnvCfg):
     rewards: RewardsFullBodyCfg = RewardsFullBodyCfg()
     terminations: TerminationsCfg = TerminationsCfg()
 
+    curriculum: CurriculumCfg = CurriculumCfg()
+
     # Post initialization
     def __post_init__(self) -> None:
         """Post initialization."""
-        # general settings
-        self.decimation = 2
-        self.episode_length_s = 5
-        # viewer settings
-        self.viewer.eye = (8.0, 0.0, 5.0)
+        self.decimation = 4
+        self.episode_length_s = 20.0
         # simulation settings
-        self.sim.dt = 1 / 120
+        self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
+        self.sim.physics_material = self.scene.terrain.physics_material
+        self.sim.physx.gpu_max_rigid_patch_count = 10 * 2**15
+
+        # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
+        # this generates terrains with increasing difficulty and is useful for training
+        if getattr(self.curriculum, "terrain_levels", None) is not None:
+            if self.scene.terrain.terrain_generator is not None:
+                self.scene.terrain.terrain_generator.curriculum = True
+        else:
+            if self.scene.terrain.terrain_generator is not None:
+                self.scene.terrain.terrain_generator.curriculum = False
