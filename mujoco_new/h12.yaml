@@ -1,0 +1,26 @@
+xml_path: /home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/mujoco/h1_2/scene.xml
+policy_path: /home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/isaaclab/logs/rsl_rl/h12_locomotion_rma/2026-01-13_12-22-51/exported/policy.pt
+env_path: /home/niraj/isaac_projects/h12_locomotion_rma/h12_locomotion_rma/isaaclab/logs/rsl_rl/h12_locomotion_rma/2026-01-13_12-22-51/params/env.yaml
+
+# Total simulation time
+simulation_duration: 60.0
+
+# joints, this can be found in the log 
+# Order from robot.data.joint_names in Isaac Lab
+ordered_joints_lab: ["left_hip_yaw_joint",      # Index 0
+            "right_hip_yaw_joint",              # Index 1
+            "left_hip_pitch_joint",             # Index 2
+            "right_hip_pitch_joint",            # Index 3
+            "left_hip_roll_joint",              # Index 4
+            "right_hip_roll_joint",             # Index 5
+            "left_knee_joint",                  # Index 6
+            "right_knee_joint",                 # Index 7
+            "left_ankle_pitch_joint",           # Index 8
+            "right_ankle_pitch_joint",          # Index 9
+            "left_ankle_roll_joint",            # Index 10
+            "right_ankle_roll_joint"]           # Index 11
+
+num_actions: 12
+num_obs: 45
+
+cmd_init: [0.0, 0.0, 0.0]
